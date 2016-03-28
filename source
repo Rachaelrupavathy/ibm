@@ -1,0 +1,363 @@
+A.1 Source Code
+Admin Login:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+
+public partial class AdminLogin : System.Web.UI.Page
+{
+    SqlConnection con;
+    SqlCommand cmd;
+    
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        String connectionString = ConfigurationManager.ConnectionStrings["DEPLOY"].ConnectionString;
+        con = new SqlConnection(connectionString);
+    }
+    protected void Button1_Click(object sender, EventArgs e)
+    {
+        //cmd = new SqlCommand("select * from AdminLogin where UserName='" + txtusername.Text + "' and Password='" + txtpassword.Text + "'", con);
+        //con.Open();
+        //SqlDataReader dr;
+        //dr = cmd.ExecuteReader();
+        //if (dr.Read())
+        //{
+        //    Response.Redirect("adminpage.aspx?userid=" + dr[0].ToString(), true);
+      
+        //}
+        //cmd.Dispose();
+       
+        //con.Close();
+    }
+    protected void Button2_Click1(object sender, EventArgs e)
+    {
+        txtusername.Text = "";
+        txtpassword.Text = "";
+    }
+    protected void Button1_Click1(object sender, EventArgs e)
+    {
+        cmd = new SqlCommand("select * from AdminLogin where UserName='" + txtusername.Text + "' and Password='" + txtpassword.Text + "'", con);
+        con.Open();
+        SqlDataReader dr;
+        dr = cmd.ExecuteReader();
+        if (dr.Read())
+        {
+            Response.Redirect("adminpage.aspx?userid=" + dr[0].ToString(), true);
+
+        }
+        else
+        {
+            Response.Write("<script>window.alert('Access Denied')</script>");
+        }
+        dr.Close();
+        con.Close();
+    }
+}
+
+
+
+   
+User Details:
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.IO;
+using System.Net;
+using System.Data;
+using Ionic.Zip;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Security.Cryptography;
+
+public partial class UploadFile : System.Web.UI.Page
+{
+    SqlConnection con;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        String connectionString = ConfigurationManager.ConnectionStrings["DEPLOY"].ConnectionString;
+        con = new SqlConnection(connectionString);
+    }
+
+    private void uploadsave()
+    {
+        try
+        {
+            string filename = Path.GetFileName(FileUpload2.PostedFile.FileName);
+            FileUpload2.SaveAs(Server.MapPath("sample/" + filename));
+            SqlCommand cmd = new SqlCommand("insert into FileInfo1(Userid,Fileid,FileName,FileDesc,FilePath) values('" + txtuserid.Text + "','" + txtfileid.Text + "','" + txtName.Text + "','" + txtFileDescription.Text + "','" + filename + "')", con);
+            con.Open();
+            cmd.ExecuteReader();
+            Response.Write("<script> alert('success')</script>");
+            con.Close();
+
+        }
+        catch
+        {
+            Response.Write("<script> alert('Error')</script>");
+
+
+        }
+    }
+    protected void btnUpload_Click(object sender, EventArgs e)
+    {
+        uploadsave();
+        string strFilePath = string.Empty;
+        try
+        {
+            if (FileUpload2.HasFile)
+            {
+                //Get path for saving the uploaded file
+                strFilePath = Server.MapPath("~/UploadFiles/" + FileUpload2.FileName);
+                //Saving the file in the server
+                FileUpload2.SaveAs(strFilePath);
+                //Create the Zip of uploaded file
+                using (ZipFile objZip = new ZipFile())
+                {
+                    //Adding the uploaded file to create zip file
+                    objZip.AddFile(strFilePath);
+                    //Saving the Zipped file in  Zipped Files folder in the root directory
+                    objZip.Save(Server.MapPath("~/UploadFiles/DemoZipFile.zip"));
+                }
+                //If you want to delete the file from Server after finishing the task of creating Zip then
+                //write the  code mentioned below otherwise skip this  code.
+                File. Delete(strFilePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Response.Write("Following Error Occurred: " + ex.Message.ToString());
+        }
+        finally
+        {
+            strFilePath = string.Empty;
+        }
+    }
+}
+
+
+
+User Login:
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data.SqlClient;
+using System.Configuration;
+using System.Data;
+
+public partial class User Login : System.Web.UI.Page
+{
+    SqlConnection con;
+    SqlCommand cmd, cmd1, cmd2, cmd3;
+    SqlDataReader dr1, dr2;
+    
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        BtnRenew.Visible = false;
+        String connectionString = ConfigurationManager.ConnectionStrings["DEPLOY"].ConnectionString;
+        con = new SqlConnection(connectionString);
+    }
+    protected void Button1_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            cmd1 = new SqlCommand("select * from Userregister where Uid='" + txtuserid.Text + "' and Username='" + txtusername.Text + "'and Password='" + txtpassword.Text + "'", con);
+            cmd1.Connection.Open();
+            dr1 = cmd1.ExecuteReader();
+            if (dr1.Read())
+            {
+
+                Response.Redirect("UserPage.aspx?Uid=" + dr1[0].ToString(), true);
+            }
+
+            else
+            {
+                int x = 1;
+                this.Session["Username"] = txtusername.Text;
+                Session["counter"] = Convert.ToInt32(Session["counter"]) + x;
+                if (Convert.ToInt32(Session["counter"]) > 2)
+                {
+                    Label11.Text = "More Than 3 times Failed - User blocked! Please Renewal your account";
+                    BtnRenew.Visible = true;
+                    deactive();
+                    Button1.Enabled = false;
+                   
+                    Session.Abandon();
+                    
+                    {
+                        Response.Write("<script>window.alert('Access Denied  Ur Account Was Inactive')</script>");
+
+                    }
+                    dr1.Close();
+                    cmd1.Connection.Close();
+                }
+            }
+        }
+        catch
+        {
+            Response.Write("<script>window.alert('OOPS! Please Provide Correct Details')</script>");
+        }
+    }
+    protected void Button2_Click1(object sender, EventArgs e)
+    {
+        try
+        {
+           
+            Response.Redirect("Renewal.aspx?Uid=" + dr1[0].ToString(), true);
+        }
+        catch
+        {
+            Response.Write("<script>window.alert('OOPS! Please Provide Correct Details')</script>");
+        }
+    }
+    protected void LinkButton2_Click(object sender, EventArgs e)
+    {
+
+    }
+    public void deactive()
+    {
+        cmd3 = new SqlCommand("update Userregister set Mode='Deactive' where Uid='" + txtuserid.Text + "'", con);
+        
+        cmd3.ExecuteReader();
+        
+        con.Close();
+    }
+}
+
+
+
+Renewal Account:
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data.SqlClient;
+using System.Configuration;
+using System.Data;
+public partial class Renewal : System.Web.UI.Page
+{
+    SqlConnection con;
+    SqlCommand cmd;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+
+        String connectionString = ConfigurationManager.ConnectionStrings["DEPLOY"].ConnectionString;
+        con = new SqlConnection(connectionString);
+        con.Open();
+        lblSecurityKey.Visible = false;
+        if (!IsPostBack)
+        {
+         txtUid.Text = Request.QueryString["Uid"];
+         txtUserName.Text = Request.QueryString["Username"];
+        }
+    }
+    protected void Button1_Click(object sender, EventArgs e)
+    {
+
+        cmd = new SqlCommand("update Userregister set Mode='Active' where Username='" +txtUserName.Text + "'", con);
+        cmd.ExecuteNonQuery();
+        ClientScript.RegisterStartupScript(Page.GetType(), "validation", "<script language='javascript'>alert('Renewal success')</script>");
+
+        txtUid.Text = "";
+        txtUserName.Text = "";
+        txtPassword.Text = "";
+     
+        txtTo.Text = "";
+        txtSecurityAns.Text = "";
+        lblSecurityKey.Text = "";
+    }
+    protected void Button2_Click1(object sender, EventArgs e)
+    {
+        txtUid.Text = "";
+        txtUserName.Text = "";
+        txtPassword.Text = "";
+        txtTo.Text = "";
+        txtSecurityAns.Text = "";
+        lblSecurityKey.Text = "";
+    }
+    protected void DropDownList1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
+}
+
+Download Files:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.IO;
+using System.Net;
+using System.Data;
+using Ionic.Zip;
+using System.Data.SqlClient;
+public partial class Download : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+         if (!IsPostBack)
+    {
+        string[] filePaths = Directory.GetFiles(Server.MapPath("~/UploadFiles/"));
+        List<ListItem> files = new List<ListItem>();
+        foreach (string filePath in filePaths)
+        {
+            files.Add(new ListItem(Path.GetFileName(filePath), filePath));
+        }
+        GridView1.DataSource = files;
+        GridView1.DataBind();
+    }
+   
+}
+   private void DownloadFiles( object sender, EventArgs e)
+    {
+     }
+    protected void DownloadFile(object sender, EventArgs e)
+    {
+        using (ZipFile zip = new ZipFile())
+  {
+zip.AlternateEncodingUsage = ZipOption.AsNecessary;
+            zip.AddDirectoryByName("Files");
+            foreach (GridViewRow row in GridView1.Rows)
+            {
+                if ((row.FindControl("chkSelect") as CheckBox).Checked)
+                {
+                    string filePath = (row.FindControl("lblFilePath") as Label).Text;
+                    zip.AddFile(filePath, "Files");
+                }
+            }
+            Response.Clear();
+            Response.BufferOutput = false;
+            string zipName = String.Format("Zip_{0}.zip", DateTime.Now.ToString("yyyy-MMM-dd-HHmmss"));
+            Response.ContentType = "application/zip";
+            Response.AddHeader("content-disposition", "attachment; filename=" + zipName);
+            zip.Save(Response.OutputStream);
+            Response.End();
+        }
+     }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)    {  
+}}
+
+
+
